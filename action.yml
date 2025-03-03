@@ -1,5 +1,5 @@
-name: The name of your action here
-description: Provide a description here
+name: 'pr-comment '
+description: GitHub Actions JavaScript Template
 author: Your name or organization here
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
@@ -9,11 +9,21 @@ branding:
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: Your input description here
-    required: true
-    default: '1000'
-
+owner:
+  description: "The owner of the organization"
+  required: true
+repo:
+  description: "The repository name"
+  required: true
+pr_number:
+  description: "The number of pull requests"
+  required: true 
+   
+   //bu token github tokeni api için lazım 
+token:
+  description: 'The token to use to access the Github API '
+  required: true 
+  
 # Define your outputs here.
 outputs:
   time:
