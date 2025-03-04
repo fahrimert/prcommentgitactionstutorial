@@ -10,20 +10,20 @@ branding:
 # Define your inputs here.
 inputs:
 owner:
-  description: "The owner of the organization"
+  description: 'The owner of the organization'
   required: true
 repo:
-  description: "The repository name"
+  description: 'The repository name'
   required: true
 pr_number:
-  description: "The number of pull requests"
-  required: true 
-   
-   //bu token github tokeni api için lazım 
+  description: 'The number of pull requests'
+  required: true
+
+    //bu token github tokeni api için lazım
 token:
   description: 'The token to use to access the Github API '
-  required: true 
-  
+  required: true
+
 # Define your outputs here.
 outputs:
   time:

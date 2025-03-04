@@ -27246,20 +27246,7 @@ function requireCore () {
 
 var coreExports = requireCore();
 
-/**
- * Waits for a number of milliseconds.
- *
- * @param {number} milliseconds The number of milliseconds to wait.
- * @returns {Promise<string>} Resolves with 'done!' after the wait is over.
- */
-async function wait(milliseconds) {
-  return new Promise((resolve) => {
-    if (isNaN(milliseconds)) throw new Error('milliseconds is not a number')
-
-    setTimeout(() => resolve('done!'), milliseconds);
-  })
-}
-
+const github = require('@actions/github');
 /**
  * The main function for the action.
  *
@@ -27267,29 +27254,96 @@ async function wait(milliseconds) {
  */
 async function run() {
   try {
-    const ms = coreExports.getInput('milliseconds');
+    const owner = coreExports.getInput('owner', { required: true });
+    const repo = coreExports.getInput('repo ', { required: true });
+    const pr_number = coreExports.getInput('pr_number', { required: true });
+    const token = coreExports.getInput('token', { required: true });
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    coreExports.debug(`Waiting ${ms} milliseconds ...`);
+    // ilk önce kullanıcıdan bu inputları alıyoruz
+    const octokit = new github.getOctokit(token);
 
-    // Log the current timestamp, wait, then log the new timestamp
-    coreExports.debug(new Date().toTimeString());
-    await wait(parseInt(ms, 10));
-    coreExports.debug(new Date().toTimeString());
+    //octokitle alakalı fonksiyonlar ne falan bakmak istiyorsan github octokite git diyo
+    //octokitle alakalı herşeyi barındırıyomuş o documentasyon.
 
-    // Set outputs for other workflow steps to use
-    coreExports.setOutput('time', new Date().toTimeString());
+    //octokitin tam olarak ne işe yaradığını bilmiyorum
+
+    const { data: changedFiles } = await octokit.rest.pull.listFiles({
+      owner,
+      repo,
+      pull_number: pr_number
+    });
+    //-bu method json objesi döndürüyormuş 2 veya 3 keyi var httpresponse döndürüyor.
+    //data diye bişe de döndürüyor bu payload apidan döndürülen
+
+    let diffData = {
+      addition: 0,
+      deletions: 0,
+      changes: 0
+    };
+    //bunlar commentin bodysi olacakmış
+
+    diffData = changedFiles.reduce((acc, file) => {
+      acc.additions += file.additions;
+      acc.deletions + file.deletions;
+      acc.changes += file.changes;
+      return acc
+    }, diffData);
+
+    //changed fileların üzerinde dönüp addition deletion ve changeleri topluyoz bunun için.
+
+    //labelları ekleme olayı
+
+    await octokit.rest.issues.createComment({
+      owner,
+      repo,
+      issue_number: pr_number,
+      body: `
+                Pull request #${pr_number} has updated with: \n
+                -${diffData.changes} changes \n
+                -${diffData.addition} addition \n
+                -${diffData.deletions} deletions \n
+                
+            `
+    });
+    //burda da commentleri oluşturuyoz
+
+    for (const file of changedFiles) {
+      //readme.md falan gibi geldiği için . ile splitlememmiz gerekiyor
+      //pop yapınca mdyi verecek
+      const fileExtension = file.filename.split('.').pop();
+      let label = '';
+      switch (fileExtension) {
+        case 'md':
+          label = 'markdown';
+          break
+        case 'js':
+          label = 'javascript';
+          break
+        case 'yml':
+          label = 'yaml';
+          break
+        case 'yaml':
+          label = 'yaml';
+          break
+        default:
+          label = 'noextension';
+          break
+      }
+      await octokit.rest.issues.addLabels({
+        owner,
+        repo,
+        issue_number: pr_number,
+        labels: [label]
+      });
+    }
+    //octokit librarysinde yine add labels kısmında varmış
   } catch (error) {
-    // Fail the workflow run if an error occurs
-    if (error instanceof Error) coreExports.setFailed(error.message);
+    coreExports.setFailed(error.message);
   }
 }
 
-/**
- * The entrypoint for the action. This file simply imports and runs the action's
- * main logic.
- */
+require('@actions/core');
+require('@actions/github');
 
-/* istanbul ignore next */
 run();
 //# sourceMappingURL=index.js.map
